@@ -1,6 +1,5 @@
 import gymnasium
 import numpy as np
-from pogema.animation import AnimationConfig, AnimationMonitor
 
 from pogema import pogema_v0
 
@@ -9,10 +8,12 @@ from copy import deepcopy
 from pogema import GridConfig
 from pogema.wrappers.metrics import LifeLongAverageThroughputMetric
 from pogema.wrappers.multi_time_limit import MultiTimeLimit
+from pogema_toolbox.create_env import Environment
 
-from env.custom_maps import MAPS_REGISTRY
 from pogema.generator import generate_new_target
 from typing import Literal
+
+from pogema_toolbox.registry import ToolboxRegistry
 
 from env.warehouse_wfi import WarehouseWFI
 
@@ -59,19 +60,34 @@ class ProvideGlobalObstacles(gymnasium.Wrapper):
         return all_goals
 
 
-def create_env_base(config: DecMAPFConfig):
+class ProvideMapWrapper(gymnasium.Wrapper):
+    def reset(self, **kwargs):
+        observations, infos = self.env.reset(seed=self.env.grid_config.seed)
+        global_obstacles = self.get_global_obstacles()
+        global_agents_xy = self.get_global_agents_xy()
+        global_targets_xy = self.get_global_targets_xy()
+        global_lifelong_targets_xy = self.get_lifelong_global_targets_xy()
+        for idx, obs in enumerate(observations):
+            obs['global_obstacles'] = global_obstacles
+            obs['global_agent_xy'] = global_agents_xy[idx]
+            obs['global_target_xy'] = global_targets_xy[idx]
+            obs['global_lifelong_targets_xy'] = global_lifelong_targets_xy[idx]
+        return observations, infos
+
+
+def create_env_base(env_cfg: Environment):
+    config = env_cfg.grid_config
     if config.map_name == 'wfi_warehouse':
         env = WarehouseWFI(grid_config=config)
         env = ProvideGlobalObstacles(env)
+        env = ProvideMapWrapper(env)
         env = MultiTimeLimit(env, config.max_episode_steps)
         env = LifeLongAverageThroughputMetric(env)
     else:
         env = pogema_v0(grid_config=config)
         env = ProvideGlobalObstacles(env)
+        env = ProvideMapWrapper(env)
         env = MultiMapWrapper(env)
-
-    if config.with_animation:
-        env = AnimationMonitor(env, AnimationConfig(directory='renders', show_lines=True))
     return env
 
 
@@ -83,10 +99,11 @@ class MultiMapWrapper(gymnasium.Wrapper):
         pattern = self.grid_config.map_name
 
         if pattern:
-            for map_name in sorted(MAPS_REGISTRY):
+            maps = ToolboxRegistry.get_maps()
+            for map_name in sorted(maps):
                 if re.match(pattern, map_name):
                     cfg = deepcopy(self.grid_config)
-                    cfg.map = MAPS_REGISTRY[map_name]
+                    cfg.map = maps[map_name]
                     cfg.map_name = map_name
                     cfg = GridConfig(**cfg.dict())
                     self._configs.append(cfg)

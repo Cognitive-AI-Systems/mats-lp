@@ -1,0 +1,69 @@
+environment:
+  name: Pogema-v0
+  grid_config:
+    on_target: restart
+    max_episode_steps: 512
+    observation_type: POMAPF
+    collision_system: soft
+    auto_reset: False
+    obs_radius: 5
+    map_name:
+      grid_search: [
+        pico_s00_od20_na32, pico_s01_od20_na32, pico_s02_od20_na32,
+        pico_s03_od20_na32, pico_s04_od20_na32, pico_s05_od20_na32,
+        pico_s06_od20_na32, pico_s07_od20_na32, pico_s08_od20_na32,
+        pico_s09_od20_na32, pico_s10_od10_na32, pico_s11_od10_na32,
+        pico_s12_od10_na32, pico_s13_od10_na32, pico_s14_od10_na32,
+        pico_s15_od10_na32, pico_s16_od10_na32, pico_s17_od10_na32,
+        pico_s18_od10_na32, pico_s19_od10_na32, pico_s20_od30_na32,
+        pico_s21_od30_na32, pico_s22_od30_na32, pico_s23_od30_na32,
+        pico_s24_od30_na32, pico_s25_od30_na32, pico_s26_od30_na32,
+        pico_s27_od30_na32, pico_s28_od30_na32, pico_s29_od30_na32,
+        pico_s30_od0_na32, pico_s31_od0_na32, pico_s32_od0_na32,
+        pico_s33_od0_na32, pico_s34_od0_na32, pico_s35_od0_na32,
+        pico_s36_od0_na32, pico_s37_od0_na32, pico_s38_od0_na32,
+        pico_s39_od0_na32,
+      ]
+    num_agents:
+      grid_search: [ 8, 16, 32 ]
+    seed:
+      grid_search: [ 0, 1, 2, 3, 4 ]
+
+algorithms:
+  A*:
+    name: A*
+    num_process: 12
+#  MATS-LP:
+#    name: MATS-LP
+#    num_process: 2
+#    num_threads: 8
+#    ppo_only: false
+#    num_expansions: 250
+#    gamma: 0.96
+#    pb_c_init: 4.4
+#    random_action_chance: 0.6
+#    use_move_limits: True
+#    parallel_backend: 'balanced_dask'
+#    path_to_weights: 'cost-tracer.onnx'
+
+results_views:
+  TabularView1:
+    type: tabular
+    drop_keys: [ seed, map_name ]
+    print_results: True
+
+  TabularView:
+    type: tabular
+    drop_keys: [ seed]
+    print_results: True
+
+
+  01-random-20x20-all-maps:
+    type: multi-plot
+    x: num_agents
+    y: avg_throughput
+    over: map_name
+    use_log_scale_x: True
+    legend_bbox_to_anchor: [ 0.5, -0.02 ]
+    name: Random $20 \times 20$
+    num_cols: 5

@@ -1,4 +1,6 @@
 from typing import Optional, Literal
+
+from pogema_toolbox.algorithm_config import AlgoBase
 from pydantic import BaseModel
 from pydantic import Extra
 import gymnasium
@@ -11,38 +13,8 @@ from mcts_cpp.mcts import Decentralized_MCTS
 from env.create_env import DecMAPFConfig
 
 
-class AlgoBase(BaseModel):
-    name: str = None
-    num_process: int = 3
-    device: str = 'cuda'
-    parallel_backend: Literal[
-        'multiprocessing', 'dask', 'sequential', 'balanced_multiprocessing', 'balanced_dask'] = 'balanced_multiprocessing'
-    seed: Optional[int] = 0
-    preprocessing: Optional[str] = None
-
-
-class ProvideMapWrapper(gymnasium.Wrapper):
-    def reset(self, **kwargs):
-        observations, infos = self.env.reset(seed=self.env.grid_config.seed)
-        global_obstacles = self.get_global_obstacles()
-        global_agents_xy = self.get_global_agents_xy()
-        global_targets_xy = self.get_global_targets_xy()
-        global_lifelong_targets_xy = self.get_lifelong_global_targets_xy()
-        for idx, obs in enumerate(observations):
-            obs['global_obstacles'] = global_obstacles
-            obs['global_agent_xy'] = global_agents_xy[idx]
-            obs['global_target_xy'] = global_targets_xy[idx]
-            obs['global_lifelong_targets_xy'] = global_lifelong_targets_xy[idx]
-        return observations, infos
-
-
-def mcts_preprocessor(env):
-    env = ProvideMapWrapper(env)
-    return env
-
-
 class MCTSConfig(AlgoBase, extra=Extra.forbid):
-    name: Literal['MCTS'] = 'MCTS'
+    name: Literal['MATS-LP'] = 'MATS-LP'
     num_process: int = 1
     gamma: float = 0.96
     num_expansions: int = 250
@@ -87,7 +59,9 @@ class MCTSInference:
         self.cppconfig = cppconfig
 
     def act(self, observations):
+
         if 'global_obstacles' in observations[0]:
+
             gc = DecMAPFConfig(on_target='restart')
             cpp_env = Environment(self.cfg.obs_radius, self.cfg.collision_system, gc.on_target,
                                   self.cfg.progressed_reward)
@@ -105,3 +79,6 @@ class MCTSInference:
             self.mcts.set_env(cpp_env, 5)
         action = self.mcts.act()
         return action
+
+    def reset_states(self):
+        pass
