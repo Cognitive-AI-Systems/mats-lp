@@ -4,3 +4,4 @@ pogema==1.2.2
 pybind11>=2.10.0
 cppimport>=22.8.2
 typing-extensions==4.5.0
+git+ssh://git@github.com/Tviskaron/pogema-toolbox.git
