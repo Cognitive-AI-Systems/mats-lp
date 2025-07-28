@@ -1,6 +1,6 @@
 pyyaml
 pydantic>=1.8.2,<=1.9.1
 pogema==1.2.2
-pybind11>=2.10.0
+pybind11==2.13.1
 cppimport>=22.8.2
 typing-extensions==4.5.0
